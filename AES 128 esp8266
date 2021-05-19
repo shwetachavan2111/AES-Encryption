@@ -1,0 +1,75 @@
+#include "AESLib.h"
+#include <ESP8266WiFi.h>
+
+AESLib aesLib;
+String MAC = WiFi.macAddress()+"_M2S";
+
+char ciphertext[512];
+unsigned long loopcount = 0;
+
+// AES Encryption Key
+byte aes_key[] = {0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55, 0x55};
+
+byte enc_iv[N_BLOCK] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };  
+byte dec_iv[N_BLOCK] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+
+String encrypt(char * msg, uint16_t msgLen, byte iv[]) {
+      int cipherlength = aesLib.get_cipher64_length(msgLen);
+      char encrypted[cipherlength]; // AHA! needs to be large, 2x is not enough
+      aesLib.encrypt64(msg, msgLen, encrypted, aes_key, sizeof(aes_key), iv);
+      return String(encrypted);
+}
+
+String decrypt(char * msg, uint16_t msgLen, byte iv[]) {
+      char decrypted[msgLen];
+      aesLib.decrypt64(msg, msgLen, decrypted, aes_key, sizeof(aes_key), iv);
+      return String(decrypted);
+}
+
+void setup() {
+      Serial.begin(115200);
+      while (!Serial);                                        // wait for serial port
+          delay(2000);
+      aesLib.set_paddingmode(paddingMode::CMS);
+}
+
+void loop(){
+      Serial.println("ORiginal Data");
+      Serial.println(MAC);
+
+      //Convert String to char array
+      int str_len = MAC.length() + 1; 
+      char char_array[str_len];
+      MAC.toCharArray(char_array, str_len);
+
+      loopcount++; 
+      Serial.println(loopcount);                         
+
+      // Encrypt
+      uint16_t clen = String(char_array).length();
+      String encrypted = encrypt(char_array, clen, enc_iv);
+      sprintf(ciphertext, "%s", encrypted.c_str());
+      Serial.print("Encrypted Data: ");
+      Serial.println(encrypted);
+      delay(1000);
+
+      // Decrypt
+      delay(1000);
+      uint16_t dlen = encrypted.length();
+      String decrypted = decrypt( ciphertext, dlen, dec_iv);
+      Serial.print("Decrypted Data: ");
+      Serial.println(decrypted);
+      
+      if (decrypted.equals(char_array)) {
+          Serial.println("SUCCES");
+      }
+      else{
+          Serial.println("FAILURE");
+      }
+
+     for (int i = 0; i < 16; i++) {
+          enc_iv[i] = 45;
+          dec_iv[i] = 45;
+     }
+    Serial.println("");
+}
