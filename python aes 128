@@ -1,0 +1,20 @@
+from Crypto.Cipher import AES
+from Crypto.Util.Padding import pad,unpad
+#from binascii import hexlify, unhexlify
+
+
+data = b'F4:CF:A2:67:06:08_M2S'
+key = b'5555555555555555'
+iv = b'4444444444444444'
+
+#print(type(key))
+
+cipher = AES.new(key, AES.MODE_CBC,iv)                # Create a AES cipher object with the key using the mode CBC
+ct_bytes = cipher.encrypt(pad(data, AES.block_size))     # Pad the input data and then encrypt
+ct_bytes1= ct_bytes.decode("utf-8", "ignore")
+print(ct_bytes1)
+
+decipher = AES.new(key, AES.MODE_CBC, iv)
+plaintext =unpad(decipher.decrypt(ct_bytes),AES.block_size)
+plaintext1 = plaintext.decode("utf-8", "ignore")
+print(plaintext1)
